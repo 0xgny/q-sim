@@ -7,7 +7,7 @@ This project simulates a real-time tick data infrastructure. It consists of a Q/
 The architecture follows the classic publish-subscribe (pub/sub) pattern standard in KDB+ environments:
 * **Feedhandler (`feed.q`):** Simulates market data (Trades and Quotes). In a real environment, this connects to an exchange API (e.g., Polygon.io, FIX engines) and parses data into Q tables.
 * **Tickerplant (`tp.q`):** A lightweight router. It receives updates from the feedhandler, pushes them to a log file (for disaster recovery - omitted in this basic mock), and publishes them to subscribers.
-* **Real-Time Database (`rdb.q`):** Subscribes to the Tickerplant. It stores intraday data in memory, allowing for microsecond-latency queries. At the end of the day, it flushes this data to disk as a partitioned Historical Database (HDB).
+* **Real-Time Database (`rdb.q`):** Subscribes to the Tickerplant. It stores intraday data in memory, allowing for low-latency queries. There is currently no end-of-day flush to a partitioned Historical Database (HDB) — data lives only in memory for the life of the process. Persisting to an on-disk HDB would be a natural next step.
 * **Analytics Client (`analytics.py`):** Uses PyKX via Inter-Process Communication (IPC) to query the RDB, pushing aggregations down to the Q process and pulling results into Pandas DataFrames for complex signal generation.
 
 ## 3. Abstraction Philosophy
@@ -18,4 +18,4 @@ The architecture follows the classic publish-subscribe (pub/sub) pattern standar
 ## 4. Schema Decisions
 * **`trade`**: `(time; sym; price; size)`
 * **`quote`**: `(time; sym; bid; ask; bsize; asize)`
-* Both tables use `timespan` for microsecond precision and `symbol` types for tickers, as symbol interning in KDB+ allows for O(1) string comparisons.
+* Both tables use `timespan` (nanosecond-precision offset from midnight) for `time` and `symbol` types for tickers, as symbol interning in KDB+ allows for O(1) string comparisons.
